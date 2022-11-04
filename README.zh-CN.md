@@ -1,13 +1,15 @@
 # CatDFS
 
+[ English ](README.md)
+
 CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。它参考了[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)
-以及[HDFS](https://github.com/apache/hadoop)，并在其基础上进行了改进与取舍。
+以及[HDFS](https://github.com/apache/hadoop)的设计并进行了改进和取舍。
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
 
-此项目包含四个子项目，分别为：
+此项目包含四个子项目：
 * [master](https://github.com/zzhtttsss/tinydfs-master):master项目，系统的逻辑中心，负责管理chunkserver和元数据，类似于HDFS中的NameNode。
-* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver):chunkserver项目，负责存储文件的节点，类似于HDFS中的DataNode。
+* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver):chunkserver项目，系统的存储节点。负责存储文件，类似于HDFS中的DataNode。
 * [client](https://github.com/zzhtttsss/tinydfs-client):客户端项目，用户通过它于文件系统进行交互。
 * [base](https://github.com/zzhtttsss/tinydfs-base):基石项目，包含各个子项目通用的方法，常量以及protocol部分，各个子项目均依赖于它。
 
@@ -16,7 +18,7 @@ CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。它�
 - 文件操作——上传文件(add)，下载文件(get)，移动文件(move)，删除文件(remove)，获取文件信息(stat)，打印目录(list)，重命名(rename)，未来还将会支持追加写入(append)。
 - 高可靠性——文件以多副本的放置策略存储于不同的chunkserver中，副本数可以作为参数调整。
 - 高可用性——存储元数据的master多节点部署，并采用raft分布式共识算法保证元数据一致性。只要master节点可用数量超过一半，系统就仍能正常运作，不存在单点故障。
-- 缩容管理——当chunkserver故障时，系统会判断是否需要执行缩容操作，将数据节点上存储的文件根据策略转移至其他chunkserver上，确保不会丢失副本。
+- 缩容管理——当chunkserver故障时，系统会执行缩容操作，将数据节点上存储的文件根据策略转移至其他chunkserver上，确保不会丢失副本。
 - 扩容管理——用户可以随时新增chunkserver，系统会根据策略将其他chunkserver上的文件转移过来。
 - 负载均衡——在用户上传文件，系统缩容和扩容时，系统会寻找最优策略选取恰当的chunkserver放置文件，使各个chunkserver的磁盘使用量基本均衡。
 - 崩溃恢复——master节点和chunkserver节点崩溃后重启都可以无需配置直接加入系统，其上存储的信息也都不会丢失。
@@ -28,7 +30,35 @@ CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。它�
 - 清晰的设计思路——提供完整的设计文档，包含了各个元数据和机制的设计，便于快速掌握系统的设计原理。
 - 详细的代码注释——绝大多数函数和属性都有较为详尽的英文注释，帮助理解各个函数和变量的作用。
 
-
+<!-- TOC -->
+* [CatDFS](#catdfs)
+  * [背景](#背景)
+  * [安装](#安装)
+  * [示例](#示例)
+  * [设计](#设计)
+    * [整体架构](#整体架构)
+      * [Master](#master)
+      * [Chunkserver](#chunkserver)
+      * [Client](#client)
+    * [元数据](#元数据)
+      * [Chunk元数据](#Chunk元数据)
+      * [DataNode元数据](#DataNode元数据)
+      * [文件树](#文件树)
+    * [高可用性](#高可用性)
+      * [Leader切换](#Leader切换)
+      * [元数据持久化](#元数据持久化)
+      * [崩溃恢复](#崩溃恢复)
+      * [读写分离](#读写分离)
+    * [文件传输](#文件传输)
+      * [采用GRPC Stream传输](#采用GRPC Stream传输)
+      * [接受转发和IO分离](#接受转发和IO分离)
+      * [递归完成数据传输](#递归完成数据传输)
+      * [错误处理](#错误处理)
+    * [缩容](#缩容)
+    * [扩容](#扩容)
+  * [维护者](#维护者)
+  * [使用许可](#使用许可)
+<!-- TOC -->
 
 ## 背景
 
@@ -74,7 +104,7 @@ Master采取多节点部署策略，并使用Raft共识算法（通过[hashicorp
 
 Chunkserver是系统的存储节点，负责实际存储用户上传的文件。但是Chunkserver上存储的不是整个的文件而是固定大小（64MB）的Chunk，
 每个文件都会被切成等大的Chunk，每个Chunk按照用户设定的副本数量存在多个Chunkserver中。Chunkserver会定期向Master发送心跳，
-并通过心跳与Master交换信息。Chunkserver与其他Chunkserver和Client之间会通过建立管道传输C和接受Chunk。
+并通过心跳与Master交换信息。Chunkserver与其他Chunkserver和Client之间会通过建立管道传输Chunk和接受Chunk。
 
 
 #### Client
@@ -153,8 +183,7 @@ Snapshot包含所有的元数据信息。
 
 #### 采用GRPC Stream传输
 
-因为一个Chunk大小为64mb，GRPC常规传输不适合这种大文件，所以采用这种流式传输，其会将整个chunk分为多次传输，这里称每次传输的为一个piece
-（另外因为其他服务间通信都使用了GRPC，所以也没有再去使用tcp，http或是其他方式传输文件）
+因为一个Chunk大小为64mb，GRPC常规传输不适合这种大文件，所以采用这种流式传输，其会将整个chunk分为多次传输，这里称每次传输的为一个piece。
 
 #### 接受转发和IO分离
 
