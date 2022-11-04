@@ -1,3 +1,12 @@
 [submodule "catdfs-base"]
 	path = catdfs-base
 	url = https://github.com/zzhtttsss/catdfs-base
+[submodule "catdfs-client"]
+	path = catdfs-client
+	url = https://github.com/zzhtttsss/catdfs-client
+[submodule "catdfs-master"]
+	path = catdfs-master
+	url = https://github.com/zzhtttsss/catdfs-master
+[submodule "catdfs-chunkserver"]
+	path = catdfs-chunkserver
+	url = https://github.com/zzhtttsss/catdfs-chunkserver
