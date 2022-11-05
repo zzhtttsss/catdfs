@@ -85,6 +85,8 @@ docker compose -f [compose.yaml] up -d
 
 ## 示例
 
+<img src="./document/display.gif" width="750"/>
+
 ## 设计
 
 ### 整体架构
@@ -227,9 +229,7 @@ Master在一定时间没有收到某个Chunkserver的心跳后会判定该Chunks
 
 ### 扩容
 
-
-
-
+施工中...
 
 ## 维护者
 
