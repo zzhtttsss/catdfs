@@ -87,7 +87,13 @@ docker compose -f [compose.yaml] up -d
 
 ## 示例
 
+### 操作示例
+
 <img src="./document/display.gif" width="750"/>
+
+### 监控示例
+
+<img src="./document/monitor.png" height="500"/>
 
 ## 设计
 
@@ -287,8 +293,6 @@ Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk�
 * 网络IO
 * 磁盘IO
 * 各个RPC调用的数量和成功率
-
-<img src="./document/monitor.png" height="500"/>
 
 ## 维护者
 

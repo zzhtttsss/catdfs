@@ -109,7 +109,13 @@ docker compose -f [compose.yaml] up -d
 
 ## Example
 
+### Operation Example
+
 <img src="./document/display.gif" width="750"/>
+
+### Monitor Example
+
+<img src="./document/monitor.png" height="500"/>
 
 ## Design
 
