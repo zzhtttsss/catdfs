@@ -2,49 +2,50 @@
 
 [ 中文 ](README.zh-CN.md)
 
-CatDFS is a open source lightweight distributed file system implemented in Golang. It references the design of
-[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)and [HDFS](https://github.com/apache/hadoop).
+CatDFS is an open-source lightweight distributed file system implemented in Golang. It references the design of
+[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.
+pdf)and [HDFS](https://github.com/apache/hadoop).
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
 
 CatDFS includes four subprojects:
 * [master](https://github.com/zzhtttsss/tinydfs-master): master, the brain of the system. It is responsible for
-  managing chunkservers and metadata, similar to the NameNode in HDFS.
-* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver): chunkserver, the storage node of the system. 
-  It is responsible for storing files, similar to the DataNode in HDFS.
+managing chunkservers and metadata, similar to the NameNode in HDFS.
+* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver): chunkserver, the storage node of the system. It is 
+responsible for storing files, similar to the DataNode in HDFS.
 * [client](https://github.com/zzhtttsss/tinydfs-client): client, the user interacts with the file system through it.
-* [base](https://github.com/zzhtttsss/tinydfs-base): base, contains common methods, constants and protocol files 
-  for each subproject, and each subproject depends on it.
+* [base](https://github.com/zzhtttsss/tinydfs-base): base, contains common methods, constants and protocol files for 
+each subproject, and each subproject depends on it.
 
 As a distributed file system, CatDFS mainly has the following features:
 - **Abundant File operations**——Include upload file (add), download file (get), move file (move), delete file (remove), 
-  get file information(stat), print directory (list), rename file (rename), and future append writes (append) will be 
-  supported.
-- **High reliability**——Files are stored in different chunkservers with multiple replica placement strategy, 
-  and the number of replicas can be adjusted as a parameter.
-- **High availability**——Master can be deployed in clusters for avoiding the single point of failure, and the raft 
-  algorithm is used to ensure metadata consistency. As long as more than half of the master nodes are available, the 
-  system can still work.
+get file information(stat), print directory (list), rename file (rename), and future append write (append) will be
+supported.
+- **High reliability**——Files are stored in different chunkservers with multiple replica placement strategies, and the 
+number of replicas can be adjusted as a parameter.
+- **High availability**——Master can be deployed in clusters for avoiding a single point of failure, and the raft 
+algorithm is used to ensure metadata consistency. As long as more than half of the master nodes are available, 
+the system can still work.
 - **Shrinkage management**——When a chunkserver crashes, the system will perform a shrinkage operation, and transfer the 
-  files stored on the crashed chunkserver to other chunkservers according to the shrinkage strategy to ensure that no copies
-  are lost.
-- **Expansion management**——Users can add chunkservers at any time, and the system will transfer files on other chunkservers
-  according to expansion strategy.
-- **Load balance**——When the user uploads files or the system shrinks and expands, the system will find the optimal 
-  strategy to select the appropriate chunkserver to place the file, so that the disk usage of each chunkserver is 
-  basically balanced.
-- **Crash recovery**——Both master and chunkserver can be directly restarted and added to the system without configuration
-  after crashing, and the information(metadata or chunks) stored on them will not be lost.
+files stored on the crashed chunkserver to other chunkservers according to the shrinkage strategy to ensure that no 
+copies are lost.
+- **Expansion management**——Users can add chunkservers at any time, and the system will transfer files to other
+chunkservers according to the expansion strategy.
+- **Load balance**——When the user uploads files or the system shrinks and expands, the system will find the optimal
+strategy to select the appropriate chunkserver to place the file, so that the disk usage of each chunkserver is
+basically balanced.
+- **Crash recovery**——Both master and chunkserver can be directly restarted and added to the system without
+configuration after crashing, and the information(metadata or chunks) stored on them will not be lost.
 - **System monitoring**——Use `Cadvisor`+`Prometheus`+`Grafana` to visually monitor various indicators of the system.
 
-As a project suitable for noob, CatDFS mainly has the following characteristics:
-- **Complete functional features**——It implements most of the functions and features required by a distributed file system,
-  which is helpful to understand and learn the distributed system and related dependent components.
+As a project suitable for noobs, CatDFS mainly has the following characteristics:
+- **Complete functional features**——It implements most of the functions and features required by a distributed file
+system, which is helpful to understand and learn the distributed system and related dependent components.
 - **Simple system architecture**——Use the simplest structure to build the system so that people can learn it quickly.
-- **Clear design ideas**——provide complete design documents, including the design of various metadata and mechanisms, 
-  so as to quickly master the design principles of the system.
+- **Clear design ideas**——provide complete design documents, including the design of various metadata and mechanisms,
+so as to quickly master the design principles of the system.
 - **Detailed comments**——Most functions and attributes have detailed comments to help you understand the functions and
-  attributes.
+attributes.
 
 <!-- TOC -->
 * [CatDFS](#catdfs)
@@ -72,23 +73,26 @@ As a project suitable for noob, CatDFS mainly has the following characteristics:
       * [Error Handling](#error-handling)
     * [Shrinkage](#shrinkage)
     * [Expansion](#expansion)
+    * [Monitor](#monitor)
   * [Maintainers](#maintainers)
   * [License](#license)
 <!-- TOC -->
 
 ## Background
 
-CatDFS is mainly independently designed and implemented from scratch by two master students (who are also noob software 
-engineers)[@zzhtttsss](https://github.com/zzhtttsss) and [@DividedMoon](https://github.com/dividedmoon). Our purpose is 
-mainly to exercise our ability to independently design and implement projects, and to be familiar with distributed systems,
-Raft algorithms and various dependent components. This is the first time we released an independently implemented project
-on GitHub, and we are also noobs. So during the development process, the solutions to problems encountered are limited, 
-and there are still many bugs or bad design in the CatDFS. Feel free to make suggestions and questions about CatDFS. 
-We hope CatDFS can help others to learn the distributed file system, and we will continue improving CatDFS in the future~
+CatDFS is mainly independently designed and implemented from scratch by two master students (who are also noob software
+engineers)[@zzhtttsss](https://github.com/zzhtttsss) and [@DividedMoon](https://github.com/dividedmoon). Our purpose is
+mainly to exercise our ability to independently design and implement projects, and to be familiar with distributed
+systems, Raft algorithms and various dependent components. This is the first time we released an independently
+implemented project on GitHub, and we are also noobs. So during the development process, the solutions to problems
+encountered are limited, and there are still many bugs or bad designs in the CatDFS. Feel free to make suggestions and
+questions about CatDFS. 
+We hope CatDFS can help others to learn the distributed file system, and we will continue improving CatDFS in the 
+future~
 
-To simulate a distributed environment, we use `Docker` for testing. In `Docker compose`, we deploy `3` `master`, 
-`5` `chunkserver`, `Ectd` as a component for service registration and discovery, `Cadvisor`+`Prometheus`+`Grafana` 
-as visualization monitored components.
+To simulate a distributed environment, we use `Docker` for testing. In `Docker compose`, we deploy `3` `master`, `5`
+`chunkserver`, `Ectd` as a component for service registration and discovery, `Cadvisor`+`Prometheus`+`Grafana` as
+visualization monitored components.
 
 ## Install
 
@@ -105,7 +109,13 @@ docker compose -f [compose.yaml] up -d
 
 ## Example
 
+### Operation Example
+
 <img src="./document/display.gif" width="750"/>
+
+### Monitor Example
+
+<img src="./document/monitor.png" height="500"/>
 
 ## Design
 
@@ -115,15 +125,16 @@ CatDFS mainly consists of three parts: Master, Chunkserver and Client. GRPC is u
 
 #### Master
 
-Master is the brain of the whole system and is responsible for maintaining the metadata of the system (mainly including 
-Chunk information, Chunkserver information and the file tree). In order to ensure high availability, the Master adopts a
-multi-node deployment strategy and uses the Raft algorithm (implemented through [hashicorp/raft](https://github.com/hashicorp/raft))
-to ensure the metadata consistency among the Master's multiple nodes. And use the log persistence method that implemented
-by [hashicorp/raft](https://github.com/hashicorp/raft) to do metadata persistence. All Master nodes will add their own 
-addresses to Etcd to ensure Clients and Chunkservers can find them. The Master synchronizes information with the 
-Chunkserver when receiving the heartbeat of the Chunkserver(refreshes the metadata, and assigns file sending tasks) 
-instead of sending commands to the Chunkserver actively. The Master will also handle the Client's request to find or 
-modify the metadata according to the user's request.
+Master is the brain of the whole system and is responsible for maintaining the metadata of the system (mainly including
+Chunk information, Chunkserver information and the file tree). In order to ensure high availability, the Master adopts
+a multi-node deployment strategy and uses the Raft algorithm (implemented through
+[hashicorp/raft](https://github.com/hashicorp/raft)) to ensure metadata consistency among the Master's multiple nodes.
+And use the log persistence method implemented by
+[hashicorp](https://github.com/hashicorp/raft)/raft](https://github.com/hashicorp/raft) to do metadata persistence. 
+All Master nodes will add their own addresses to Etcd to ensure Clients and Chunkservers can find them. The Master
+synchronizes information with the Chunkserver when receiving the heartbeat of the Chunkserver(refreshes the metadata,
+and assigns file-sending tasks) instead of sending commands to the Chunkserver actively. The Master will also handle the
+Client's request to find or modify the metadata according to the user's request.
 
 #### Chunkserver
 
@@ -277,8 +288,41 @@ Github cannot display it well, it is recommended to download and view):
 
 ### Expansion
 
-In progress...
+The expand operation should be triggered when a Chunkserver node is added, not when the Chunkserver is back online.
 
+Trigger condition：
+- When Chunkserver is registering, it will scan all chunks stored in the local path. This Chunkserver is a new server if
+the number of scanning chunks is zero, otherwise, this Chunkserver is an old server. 
+- Set a = the number of scanning chunks in registering Chunkserver; b = the average number of all chunks in Master
+- a >= b  NOT expanding
+- a < b && b - a <= 1 NOT expanding
+- b - a > 2 expanding
+
+Expanding strategy：
+1. The number of pending chunks is the average number of all chunks stored in Master;
+2. None of the pending chunks are NOT allowed in scanning chunks stored in registering Chunkserver;
+3. Retrieve all of the alive Chunkserver to find a proper chunk that can be moved to this new Chunkserver until the
+count is up or there is no chunk satisfying the above conditions;
+4. Pending chunks will be put into `FutureSendChunk` respectively and transferred to the dataNode through heartbeat RPC。
+
+The expanding Chunkserver is unable to serve as a normal Chunkserver until most of the allocated Chunks obtained through
+heartbeat RPC have been successfully moved to the local storage.
+
+The specific process is shown in the figure:
+
+<img src="./document/expand.png" width="750"/>
+
+### Monitor
+
+Use `Cadvisor`+`Prometheus`+`Grafana` as monitor. Monitoring:
+* the number of running containers
+* the cpu usage of all containers
+* the memory usage of all containers
+* network IO
+* disk IO
+* the count and successful rate of all RPC
+
+<img src="./document/monitor.png" height="500"/>
 
 ## Maintainers
 
