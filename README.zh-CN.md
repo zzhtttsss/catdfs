@@ -2,7 +2,8 @@
 
 [ English ](README.md)
 
-CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。它参考了[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)
+CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。
+它参考了[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)
 以及[HDFS](https://github.com/apache/hadoop)的设计并进行了改进和取舍。
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
@@ -140,7 +141,8 @@ DataNode元数据中主要包括dataNodeMap和dataNodeHeap。dataNodeMap包含�
 
 ### 高可用性
 
-CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据一致性的Master多节点方案（基于[hashicorp/raft](https://github.com/hashicorp/raft)实现），并借助Etcd来进行服务注册和发现。
+CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据一致性的Master多节点方案
+（基于[hashicorp/raft](https://github.com/hashicorp/raft)实现），并借助Etcd来进行服务注册和发现。
 
 #### Leader切换
 
@@ -163,13 +165,16 @@ CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据�
 
 CatDFS的元数据持久化利用了[hashicorp/raft](https://github.com/hashicorp/raft)的持久化机制。
 
-具体而言，每个Master节点都会存储当前所有的日志信息（Log），集群信息并定期保存快照（Snapshot）。其中Log中包含对元数据的更改，集群信息包含当前集群的节点状态，Snapshot包含所有的元数据信息。
+具体而言，每个Master节点都会存储当前所有的日志信息（Log），集群信息并定期保存快照（Snapshot）。其中Log中包含对元数据的更改，
+集群信息包含当前集群的节点状态，Snapshot包含所有的元数据信息。
 
 #### 崩溃恢复
 
 在一个Master节点崩溃后，其会被Leader节点从Raft集群和Etcd中删除。如果该节点是Leader节点，则会选举出新的Leader节点完成以上操作。
 
-当Master节点恢复重启后，它将先读取Snapshot然后重新执行该Snapshot后的每一条Log信息来还原元数据。之后它将重新加入Raft集群并在Etcd中重新注册它的信息，并从Leader节点获取到Log信息来将元数据变为最新状态。完成以上步骤，Master节点即可重新对外提供服务。
+当Master节点恢复重启后，它将先读取Snapshot然后重新执行该Snapshot后的每一条Log信息来还原元数据。
+之后它将重新加入Raft集群并在Etcd中重新注册它的信息，并从Leader节点获取到Log信息来将元数据变为最新状态。
+完成以上步骤，Master节点即可重新对外提供服务。
 
 #### 读写分离
 
@@ -204,9 +209,11 @@ B的stream连接将piece转发给B，B收到后同理转发给C。
 
 #### 错误处理
 
-一个管道中的每一个Chunkserver都可能出现两种错误：文件写入错误或是数据传输错误。文件写入错误只会影响到单个节点，而数据传输错误会影响到发生错误的节点及其后续的所有节点。
+一个管道中的每一个Chunkserver都可能出现两种错误：文件写入错误或是数据传输错误。文件写入错误只会影响到单个节点,
+而数据传输错误会影响到发生错误的节点及其后续的所有节点。
 
-为了得到所有存储Chunk失败的节点来让Master在之后能弥补缺失的副本，每个Chunkserver在传输完成后都会返回一个错误列表给管道中的前一个节点。该列表包含该节点及该节点之后所有节点中传输失败的节点地址，该列表的维护机制如下：
+为了得到所有存储Chunk失败的节点来让Master在之后能弥补缺失的副本，每个Chunkserver在传输完成后都会返回一个错误列表给管道中的前一个节点。
+该列表包含该节点及该节点之后所有节点中传输失败的节点地址，该列表的维护机制如下：
 * 当节点发生文件写入错误时，便将自己的地址加入到列表中；
 * 当节点向下一个节点发送数据出错时，将该节点之后的所有节点地址都加入到列表中；
 * 当节点接收数据出错时，直接停止接收和发送数据；
@@ -223,18 +230,23 @@ Master会将向pendingChunkQueue中加入此数量的该Chunk，并在之后通�
 Master在一定时间没有收到某个Chunkserver的心跳后会判定该Chunkserver死亡，触发缩容。
 
 Chunkserver死亡的判定条件：
-1. 由leader发起MonitorHeartbeat协程，每隔一段时间检查各个Chunkserver的心跳时间。当某个Chunkserver心跳时间超过[30s]未刷新时，认为该Chunkserver进入Died状态，此时不接受leader发起的任何安排;
-2. 再经过[10m]，如果该Chunkserver还未成功刷新状态(成功发起心跳)，则视为该Chunkserver彻底下线，于是将该Chunkserver注销，其上存储的Chunk需要进行复制以确保副本数。
+1. 由leader发起MonitorHeartbeat协程，每隔一段时间检查各个Chunkserver的心跳时间。当某个Chunkserver心跳时间超过[30s]未刷新时，
+认为该Chunkserver进入Died状态，此时不接受leader发起的任何安排;
+2. 再经过[10m]，如果该Chunkserver还未成功刷新状态(成功发起心跳)，则视为该Chunkserver彻底下线，
+于是将该Chunkserver注销，其上存储的Chunk需要进行复制以确保副本数。
 
-Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk以及特殊列表中还存在的Chunk存放进一个特殊队列(pendingChunkQueue)中。所有需要复制的Chunk都需要放到该队列，无论是否是由于缩容导致的。
+Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk以及特殊列表中还存在的Chunk存放进一个特殊队列(pendingChunkQueue)中。
+所有需要复制的Chunk都需要放到该队列，无论是否是由于缩容导致的。
 
 由leader发起MonitorDeadChunk协程，每隔一段时间或发现该Queue的Chunk数量超过阈值时，开始进行复制操作：
-1. 为了避免频繁发起日志Apply操作，这里进行批处理，批的数量为[32=2G]。对于一批中的各个Chunk，需要寻找存储该Chunk且存活的Chunkserver以及将该Chunk复制过去且存活的Chunkserver;
+1. 为了避免频繁发起日志Apply操作，这里进行批处理，批的数量为[32=2G]。对于一批中的各个Chunk，需要寻找存储该Chunk且存活的Chunkserver
+以及将该Chunk复制过去且存活的Chunkserver;
 2. 如何寻找存储该Chunk的Chunkserver？每个Chunk结构会记录存储的Chunkserver，从中获取存活的且IO量较小的Chunkserver即可；
 3. 如果寻找将该Chunk复制过去Chunkserver？通过DFS查找目的Chunkserver的最优解；
 4. 寻找完毕后，还需要进行2步操作：
-  1. 汇总复制的转移记录，形成Operation，并实现Apply方法。(因为是对元数据进行修改)
-  2. 为了避免Leader调用Chunkserver的RPC，将转移的Chunk和目的地一并放进对应Chunkserver的特殊列表FutureSendChunks中，并随着心跳机制传给Chunkserver。在Chunkserver接收到心跳后，对该Chunk和目的地发起RPC进行复制。
+   1. 汇总复制的转移记录，形成Operation，并实现Apply方法。(因为是对元数据进行修改)
+   2. 为了避免Leader调用Chunkserver的RPC，将转移的Chunk和目的地一并放进对应Chunkserver的特殊列表FutureSendChunks中，
+并随着心跳机制传给Chunkserver。在Chunkserver接收到心跳后，对该Chunk和目的地发起RPC进行复制。
 
 具体流程如图所示（图片较大以至于Github不能很好的显示，
 建议下载查看）：
