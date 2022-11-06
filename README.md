@@ -82,7 +82,7 @@ docker compose -f [compose.yaml] up -d
 
 ## Example
 
-In progress...
+<img src="./document/display.gif" width="750"/>
 
 ## Design
 
