@@ -56,6 +56,7 @@ CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。它�
       * [错误处理](#错误处理)
     * [缩容](#缩容)
     * [扩容](#扩容)
+    * [监控](#监控)
   * [维护者](#维护者)
   * [使用许可](#使用许可)
 <!-- TOC -->
@@ -139,37 +140,36 @@ DataNode元数据中主要包括dataNodeMap和dataNodeHeap。dataNodeMap包含�
 
 ### 高可用性
 
-CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据一致性的Master多节点方案（基于[hashicorp/raft](https://github.com/hashicorp/raft)实现），
-并借助Etcd来进行服务注册和发现。
+CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据一致性的Master多节点方案（基于[hashicorp/raft](https://github.com/hashicorp/raft)实现），并借助Etcd来进行服务注册和发现。
 
 #### Leader切换
 
 当Leader节点崩溃或是出现网络故障一定时间没有和集群其他节点保持联系后，Master集群会重新选举出的Leader节点并进行Leader切换。
 
 新Leader节点将会：
-* 将自身的地址写入到Etcd相应的key中来替换原Leader节点的地址。
-* 注册一个Observer监控Follower节点状态变化事件，以便在Follower节点死亡后及时将其移出集群。
-* 在一个协程中监控Chunkserver心跳
-* 在一个协程中消费pendingChunkQueue
+* 将自身的地址写入到Etcd相应的key中来替换原Leader节点的地址；
+* 注册一个Observer监控Follower节点状态变化事件，以便在Follower节点死亡后及时将其移出集群；
+* 在一个协程中监控Chunkserver心跳；
+* 在一个协程中定时消费pendingChunkQueue；
+* 在一个协程中定时清理元数据垃圾，延时删除目录树节点。
 
 旧Leader节点将会：
-* 注销监控Follower节点状态变化事件的Observer。
-* 取消监控Chunkserver心跳的协程和消费pendingChunkQueue的协程的context以停止这两个协程。
+* 注销监控Follower节点状态变化事件的Observer；
+* 取消所有的监控和定时协程；
 * 将自身的地址写入到Etcd的Follower目录下。
 
 
 #### 元数据持久化
 
-CatDFS的元数据持久化利用了[hashicorp/raft](https://github.com/hashicorp/raft)的持久化机制。具体而言，
-每个Master节点都会存储当前所有的日志信息（Log），集群信息并定期保存快照（Snapshot）。其中Log中包含对元数据的更改，集群信息包含当前集群的节点状态，
-Snapshot包含所有的元数据信息。
+CatDFS的元数据持久化利用了[hashicorp/raft](https://github.com/hashicorp/raft)的持久化机制。
+
+具体而言，每个Master节点都会存储当前所有的日志信息（Log），集群信息并定期保存快照（Snapshot）。其中Log中包含对元数据的更改，集群信息包含当前集群的节点状态，Snapshot包含所有的元数据信息。
 
 #### 崩溃恢复
 
 在一个Master节点崩溃后，其会被Leader节点从Raft集群和Etcd中删除。如果该节点是Leader节点，则会选举出新的Leader节点完成以上操作。
 
-当Master节点恢复重启后，它将先读取Snapshot然后重新执行该Snapshot后的每一条Log信息来还原元数据。之后它将重新加入Raft集群并在Etcd中重新注册它的信息，
-并从Leader节点获取到Log信息来将元数据变为最新状态。完成以上步骤，Master节点即可重新对外提供服务。
+当Master节点恢复重启后，它将先读取Snapshot然后重新执行该Snapshot后的每一条Log信息来还原元数据。之后它将重新加入Raft集群并在Etcd中重新注册它的信息，并从Leader节点获取到Log信息来将元数据变为最新状态。完成以上步骤，Master节点即可重新对外提供服务。
 
 #### 读写分离
 
@@ -204,31 +204,77 @@ B的stream连接将piece转发给B，B收到后同理转发给C。
 
 #### 错误处理
 
-一个管道中的每一个Chunkserver都可能出现两种错误：文件写入错误或是数据传输错误。文件写入错误只会影响到单个节点，
-而数据传输错误会影响到发生错误的节点及其后续的所有节点。为了得到所有存储Chunk失败的节点来让Master在之后能弥补缺失的副本，
-每个Chunkserver在传输完成后都会返回一个错误列表给管道中的前一个节点。该列表包含该节点及该节点之后所有节点中传输失败的节点地址，
-该列表的维护机制如下：
-* 当节点发生文件写入错误时，便将自己的地址加入到列表中。
-* 当节点向下一个节点发送数据出错时，将该节点之后的所有节点地址都加入到列表中。
-* 当节点接收数据出错时，直接停止接收和发送数据。
+一个管道中的每一个Chunkserver都可能出现两种错误：文件写入错误或是数据传输错误。文件写入错误只会影响到单个节点，而数据传输错误会影响到发生错误的节点及其后续的所有节点。
+
+为了得到所有存储Chunk失败的节点来让Master在之后能弥补缺失的副本，每个Chunkserver在传输完成后都会返回一个错误列表给管道中的前一个节点。该列表包含该节点及该节点之后所有节点中传输失败的节点地址，该列表的维护机制如下：
+* 当节点发生文件写入错误时，便将自己的地址加入到列表中；
+* 当节点向下一个节点发送数据出错时，将该节点之后的所有节点地址都加入到列表中；
+* 当节点接收数据出错时，直接停止接收和发送数据；
 * 节点在接收到下一个节点返回的错误列表后，会将当前自己的列表与该列表合并。
 
 通过该机制，管道的第一个节点也就是发送方能够获取到管道中所有存储Chunk失败的节点并统计数量将其返回给Master。
+
 Master会将向pendingChunkQueue中加入此数量的该Chunk，并在之后通过消费pendingChunkQueue来补齐该Chunk的副本。
 
 <img src="./document/transferError.png" width="750"/>
 
 ### 缩容
 
-Master在一定时间没有收到某个Chunkserver的心跳后会判定该Chunkserver死亡，触发缩容。具体流程如图所示（图片较大以至于Github不能很好的显示，
+Master在一定时间没有收到某个Chunkserver的心跳后会判定该Chunkserver死亡，触发缩容。
+
+Chunkserver死亡的判定条件：
+1. 由leader发起MonitorHeartbeat协程，每隔一段时间检查各个Chunkserver的心跳时间。当某个Chunkserver心跳时间超过[30s]未刷新时，认为该Chunkserver进入Died状态，此时不接受leader发起的任何安排;
+2. 再经过[10m]，如果该Chunkserver还未成功刷新状态(成功发起心跳)，则视为该Chunkserver彻底下线，于是将该Chunkserver注销，其上存储的Chunk需要进行复制以确保副本数。
+
+Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk以及特殊列表中还存在的Chunk存放进一个特殊队列(pendingChunkQueue)中。所有需要复制的Chunk都需要放到该队列，无论是否是由于缩容导致的。
+
+由leader发起MonitorDeadChunk协程，每隔一段时间或发现该Queue的Chunk数量超过阈值时，开始进行复制操作：
+1. 为了避免频繁发起日志Apply操作，这里进行批处理，批的数量为[32=2G]。对于一批中的各个Chunk，需要寻找存储该Chunk且存活的Chunkserver以及将该Chunk复制过去且存活的Chunkserver;
+2. 如何寻找存储该Chunk的Chunkserver？每个Chunk结构会记录存储的Chunkserver，从中获取存活的且IO量较小的Chunkserver即可；
+3. 如果寻找将该Chunk复制过去Chunkserver？通过DFS查找目的Chunkserver的最优解；
+4. 寻找完毕后，还需要进行2步操作：
+  1. 汇总复制的转移记录，形成Operation，并实现Apply方法。(因为是对元数据进行修改)
+  2. 为了避免Leader调用Chunkserver的RPC，将转移的Chunk和目的地一并放进对应Chunkserver的特殊列表FutureSendChunks中，并随着心跳机制传给Chunkserver。在Chunkserver接收到心跳后，对该Chunk和目的地发起RPC进行复制。
+
+具体流程如图所示（图片较大以至于Github不能很好的显示，
 建议下载查看）：
 
 <img src="./document/shrink.png" width="750"/>
 
 ### 扩容
 
+扩容处理应该在新增Chunkserver节点时触发，而不是Chunkserver重新上线时触发。
 
+触发条件：
+- Chunkserver进行注册时，会扫描存储在该Chunkserver上的所有Chunk。如果不为空，说明是重新上线；如果为空，说明是新增节点。
+- 设 a = 注册的Chunkserver节点上存储的Chunk数量(新增节点则为0)；b = Leader上所有Chunkserver存储的Chunk数量的平均值
+- a >= b  不扩容
+- a < b && b - a <= 1 不扩容
+- b - a > 2 扩容
 
+扩容策略：
+1. 确定分配的Chunk数量，即其他Chunk数量的平均值；
+2. 检查该Chunkserver自带的Chunk，为其分配的Chunk不应该出现在这里；
+3. 检查每个存活Chunkserver的Chunk列表，每次从中取一个不在待处理列表和自带Chunk列表的Chunk。直到不能取或数量到达上限为止；
+4. 待处理列表会分别存储到对应的Chunkserver中，并跟随心跳反馈给Chunkserver。
+
+需要进行扩容操作的Chunkserver在操作还未完成时，是无法正常参与Master调度，直到通过心跳获取到大部分的分配Chunk已经成功移动到本地。
+
+具体流程如图所示：
+
+<img src="./document/expand.png" width="750"/>
+
+### 监控
+
+使用`Cadvisor`+`Prometheus`+`Grafana`作为可视化监控的组件。监控内容包括：
+* 运行的容器数量
+* 各个容器的CPU使用率
+* 各个容器的内容使用率
+* 网络IO
+* 磁盘IO
+* 各个RPC调用的数量和成功率
+
+<img src="./document/monitor.png" height="500"/>
 
 
 ## 维护者
