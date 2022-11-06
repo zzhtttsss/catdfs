@@ -51,7 +51,7 @@ CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。
       * [崩溃恢复](#崩溃恢复)
       * [读写分离](#读写分离)
     * [文件传输](#文件传输)
-      * [采用GRPC Stream传输](#采用GRPC Stream传输)
+      * [采用GRPC Stream传输](#grpc-stream)
       * [接受转发和IO分离](#接受转发和IO分离)
       * [递归完成数据传输](#递归完成数据传输)
       * [错误处理](#错误处理)
@@ -86,6 +86,8 @@ docker compose -f [compose.yaml] up -d
 ```
 
 ## 示例
+
+<img src="./document/display.gif" width="750"/>
 
 ## 设计
 
@@ -287,7 +289,6 @@ Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk�
 * 各个RPC调用的数量和成功率
 
 <img src="./document/monitor.png" height="500"/>
-
 
 ## 维护者
 
