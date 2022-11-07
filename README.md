@@ -322,8 +322,6 @@ Use `Cadvisor`+`Prometheus`+`Grafana` as monitor. Monitoring:
 * disk IO
 * the count and successful rate of all RPC
 
-<img src="./document/monitor.png" height="500"/>
-
 ## Maintainers
 
 [@zzhtttsss](https://github.com/zzhtttsss)
