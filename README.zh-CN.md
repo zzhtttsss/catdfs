@@ -37,27 +37,6 @@ CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。
   * [安装](#安装)
   * [示例](#示例)
   * [设计](#设计)
-    * [整体架构](#整体架构)
-      * [Master](#master)
-      * [Chunkserver](#chunkserver)
-      * [Client](#client)
-    * [元数据](#元数据)
-      * [Chunk元数据](#Chunk元数据)
-      * [DataNode元数据](#DataNode元数据)
-      * [文件树](#文件树)
-    * [高可用性](#高可用性)
-      * [Leader切换](#Leader切换)
-      * [元数据持久化](#元数据持久化)
-      * [崩溃恢复](#崩溃恢复)
-      * [读写分离](#读写分离)
-    * [文件传输](#文件传输)
-      * [采用GRPC Stream传输](#grpc-stream)
-      * [接受转发和IO分离](#接受转发和IO分离)
-      * [递归完成数据传输](#递归完成数据传输)
-      * [错误处理](#错误处理)
-    * [缩容](#缩容)
-    * [扩容](#扩容)
-    * [监控](#监控)
   * [维护者](#维护者)
   * [使用许可](#使用许可)
 <!-- TOC -->
@@ -74,13 +53,21 @@ CatDFS主要由两个硕士(同时也是菜鸟软件工程师)[@zzhtttsss](https
 
 ## 安装
 
-1. 将各个模块编译为`docker`镜像，在各个模块的目录下：
+在使用docker部署CatDFS之前，需要首先在一个docker子网中运行etcd服务。
+
+1. 下载或克隆CatDFS:
+
+```bash
+git clone https://github.com/zzhtttsss/catdfs.git --recurse-submodules
+```
+
+2. 将各个模块编译为`docker`镜像，在各个模块的目录下：
 
 ```bash
 docker build -t [name] .
 ```
 
-2. 运行`docker compose`文件：
+3. 运行`docker compose`文件：
 ```bash
 docker compose -f [compose.yaml] up -d
 ```

@@ -53,27 +53,6 @@ attributes.
   * [Install](#install)
   * [Example](#example)
   * [Design](#design)
-    * [Overall Structure](#overall-structure)
-      * [Master](#master)
-      * [Chunkserver](#chunkserver)
-      * [Client](#client)
-    * [Metadata](#metadata)
-      * [Chunk Metadata](#chunk-metadata)
-      * [DataNode Metadata](#datanode-metadata)
-      * [File Tree](#file-tree)
-    * [High Availability](#high-availability)
-      * [Switch Leader](#switch-leader)
-      * [Metadata Persistence](#metadata-persistence)
-      * [Crash Recovery](#crash-recovery)
-      * [Read-write Separation](#read-write-separation)
-    * [File Transfer](#file-transfer)
-      * [GRPC Streaming Transmission](#grpc-streaming-transmission)
-      * [Transmission-IO Separation](#transmission-io-separation)
-      * [Pipeline](#pipeline)
-      * [Error Handling](#error-handling)
-    * [Shrinkage](#shrinkage)
-    * [Expansion](#expansion)
-    * [Monitor](#monitor)
   * [Maintainers](#maintainers)
   * [License](#license)
 <!-- TOC -->
@@ -96,13 +75,21 @@ visualization monitored components.
 
 ## Install
 
-1. Compile each module into a `docker` image, in the directory of each module:
+Before using CatDFS, you must have run etcd image in your docker.
+
+1. Download or clone the project:
+
+```bash
+git clone https://github.com/zzhtttsss/catdfs.git --recurse-submodules
+```
+
+2. Compile each module into a `docker` image, in the directory of each module:
 
 ```bash
 docker build -t [name] .
 ```
 
-2. Run `docker compose`：
+3. Run `docker compose`：
 ```bash
 docker compose -f [compose.yaml] up -d
 ```
