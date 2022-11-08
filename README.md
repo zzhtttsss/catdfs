@@ -3,7 +3,7 @@
 [ 中文 ](README.zh-CN.md)
 
 CatDFS is an open-source lightweight distributed file system implemented in Golang. It references the design of
-[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.
+[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003).
 pdf)and [HDFS](https://github.com/apache/hadoop).
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
