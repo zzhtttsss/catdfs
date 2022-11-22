@@ -116,7 +116,7 @@ Chunk information, Chunkserver information and the file tree). In order to ensur
 a multi-node deployment strategy and uses the Raft algorithm (implemented through
 [hashicorp/raft](https://github.com/hashicorp/raft)) to ensure metadata consistency among the Master's multiple nodes.
 And use the log persistence method implemented by
-[hashicorp](https://github.com/hashicorp/raft)/raft](https://github.com/hashicorp/raft) to do metadata persistence. 
+[hashicorp/raft](https://github.com/hashicorp/raft) to do metadata persistence. 
 All Master nodes will add their own addresses to Etcd to ensure Clients and Chunkservers can find them. The Master
 synchronizes information with the Chunkserver when receiving the heartbeat of the Chunkserver(refreshes the metadata,
 and assigns file-sending tasks) instead of sending commands to the Chunkserver actively. The Master will also handle the
