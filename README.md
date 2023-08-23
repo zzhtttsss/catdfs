@@ -1,319 +1,292 @@
 # CatDFS
 
-[ 中文 ](README.zh-CN.md)
+[ English ](README.en-US.md)
 
-CatDFS is an open-source distributed file system implemented in Golang. It references the design of
-[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)and [HDFS](https://github.com/apache/hadoop).
+CatDFS是一个使用Golang实现轻量级的开源分布式文件系统。
+它参考了[《The Google File System》](https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf)
+以及[HDFS](https://github.com/apache/hadoop)的设计并进行了改进和取舍。
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
 
-CatDFS includes four subprojects:
-* [master](https://github.com/zzhtttsss/tinydfs-master): master, the brain of the system. It is responsible for
-managing chunkservers and metadata, similar to the NameNode in HDFS.
-* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver): chunkserver, the storage node of the system. It is 
-responsible for storing files, similar to the DataNode in HDFS.
-* [client](https://github.com/zzhtttsss/tinydfs-client): client, the user interacts with the file system through it.
-* [base](https://github.com/zzhtttsss/tinydfs-base): base, contains common methods, constants and protocol files for 
-each subproject, and each subproject depends on it.
+此项目包含四个子项目：
+* [master](https://github.com/zzhtttsss/tinydfs-master):master项目，系统的逻辑中心，负责管理chunkserver和元数据，类似于HDFS中的NameNode。
+* [chunkserver](https://github.com/zzhtttsss/tinydfs-chunkserver):chunkserver项目，系统的存储节点。负责存储文件，类似于HDFS中的DataNode。
+* [client](https://github.com/zzhtttsss/tinydfs-client):客户端项目，用户通过它于文件系统进行交互。
+* [base](https://github.com/zzhtttsss/tinydfs-base):基石项目，包含各个子项目通用的方法，常量以及protocol部分，各个子项目均依赖于它。
 
-As a distributed file system, CatDFS mainly has the following features:
-- **Abundant File operations**——Include upload file (add), download file (get), move file (move), delete file (remove), 
-get file information(stat), print directory (list), rename file (rename), and future append write (append) will be
-supported.
-- **High reliability**——Files are stored in different chunkservers with multiple replica placement strategies, and the 
-number of replicas can be adjusted as a parameter.
-- **High availability**——Master can be deployed in clusters for avoiding a single point of failure, and the raft 
-algorithm is used to ensure metadata consistency. As long as more than half of the master nodes are available, 
-the system can still work.
-- **Shrinkage management**——When a chunkserver crashes, the system will perform a shrinkage operation, and transfer the 
-files stored on the crashed chunkserver to other chunkservers according to the shrinkage strategy to ensure that no 
-copies are lost.
-- **Expansion management**——Users can add chunkservers at any time, and the system will transfer files to other
-chunkservers according to the expansion strategy.
-- **Load balance**——When the user uploads files or the system shrinks and expands, the system will find the optimal
-strategy to select the appropriate chunkserver to place the file, so that the disk usage of each chunkserver is
-basically balanced.
-- **Crash recovery**——Both master and chunkserver can be directly restarted and added to the system without
-configuration after crashing, and the information(metadata or chunks) stored on them will not be lost.
-- **System monitoring**——Use `Cadvisor`+`Prometheus`+`Grafana` to visually monitor various indicators of the system.
 
-As a project suitable for noobs, CatDFS mainly has the following characteristics:
-- **Complete functional features**——It implements most of the functions and features required by a distributed file
-system, which is helpful to understand and learn the distributed system and related dependent components.
-- **Simple system architecture**——Use the simplest structure to build the system so that people can learn it quickly.
-- **Clear design ideas**——provide complete design documents, including the design of various metadata and mechanisms,
-so as to quickly master the design principles of the system.
-- **Detailed comments**——Most functions and attributes have detailed comments to help you understand the functions and
-attributes.
+作为一个分布式文件系统，CatDFS主要具备以下特点：
+- 文件操作——上传文件(add)，下载文件(get)，移动文件(move)，删除文件(remove)，获取文件信息(stat)，打印目录(list)，重命名(rename)，未来还将会支持追加写入(append)。
+- 高可靠性——文件以多副本的放置策略存储于不同的chunkserver中，副本数可以作为参数调整。
+- 高可用性——存储元数据的master多节点部署，并采用raft分布式共识算法保证元数据一致性。只要master节点可用数量超过一半，系统就仍能正常运作，不存在单点故障。
+- 缩容管理——当chunkserver故障时，系统会执行缩容操作，将数据节点上存储的文件根据策略转移至其他chunkserver上，确保不会丢失副本。
+- 扩容管理——用户可以随时新增chunkserver，系统会根据策略将其他chunkserver上的文件转移过来。
+- 负载均衡——在用户上传文件，系统缩容和扩容时，系统会寻找最优策略选取恰当的chunkserver放置文件，使各个chunkserver的磁盘使用量基本均衡。
+- 崩溃恢复——master节点和chunkserver节点崩溃后重启都可以无需配置直接加入系统，其上存储的信息也都不会丢失。
+- 系统监控——采用`Cadvisor`+`Prometheus`+`Grafana`对系统的各项运行指标和负载状况进行可视化监控。
+
+作为一个适合新人入门的项目，CatDFS主要具备以下特点：
+- 完备的功能特性——实现了一个分布式文件系统所需要的大部分功能和特性，有助于了解和学习分布式系统及相关依赖组件。
+- 简单的系统架构——采用尽可能简洁的结构构建系统，尽可能做减法而不是做加法。
+- 清晰的设计思路——提供完整的设计文档，包含了各个元数据和机制的设计，便于快速掌握系统的设计原理。
+- 详细的代码注释——绝大多数函数和属性都有较为详尽的英文注释，帮助理解各个函数和变量的作用。
 
 <!-- TOC -->
 * [CatDFS](#catdfs)
-  * [Background](#background)
-  * [Install](#install)
-  * [Example](#example)
-  * [Design](#design)
-  * [Maintainers](#maintainers)
-  * [License](#license)
+  * [背景](#背景)
+  * [安装](#安装)
+  * [示例](#示例)
+  * [设计](#设计)
+  * [维护者](#维护者)
+  * [使用许可](#使用许可)
 <!-- TOC -->
 
-## Background
+## 背景
 
-CatDFS is mainly independently designed and implemented from scratch by two master students (who are also noob software
-engineers)[@zzhtttsss](https://github.com/zzhtttsss) and [@DividedMoon](https://github.com/dividedmoon). Our purpose is
-mainly to exercise our ability to independently design and implement projects, and to be familiar with distributed
-systems, Raft algorithms and various dependent components. This is the first time we released an independently
-implemented project on GitHub, and we are also noobs. So during the development process, the solutions to problems
-encountered are limited, and there are still many bugs or bad designs in the CatDFS. Feel free to make suggestions and
-questions about CatDFS. 
-We hope CatDFS can help others to learn the distributed file system, and we will continue improving CatDFS in the 
-future~
+CatDFS主要由两个硕士(同时也是菜鸟软件工程师)[@zzhtttsss](https://github.com/zzhtttsss)和[@DividedMoon](https://github.com/dividedmoon)
+从零开始独立设计并实现。我们的目的主要是锻炼自己独立设计和编写项目的能力，并熟悉分布式系统，Raft算法和各个依赖组件。
+这是我们首次在Github上发布独立实现的项目，因为我们也是初学者，在开发过程中，遇到问题的解决方式有限， 甚至是一边学习一边解决，
+所以不足之处还望谅解。欢迎大家对CatDFS提出各种建议和问题，我们很希望这个项目能帮助新人学习相关知识，接下来我们也将会持续改进维护CatDFS～
 
-To simulate a distributed environment, we use `Docker` for testing. In `Docker compose`, we deploy `3` `master`, `5`
-`chunkserver`, `Ectd` as a component for service registration and discovery, `Cadvisor`+`Prometheus`+`Grafana` as
-visualization monitored components.
+这个项目使用 `Golang` 开发，为了模拟分布式环境，使用 `Docker` 进行测试。在`Docker compose`中，我们部署了`3`个`master`、
+`5`个`chunkserver`，`Ectd`作为服务注册和发现的组件，`Cadvisor`+`Prometheus`+`Grafana`作为可视化监控的组件。
 
-## Install
+## 安装
 
-Before using CatDFS, you must have run etcd image in your docker.
+在使用docker部署CatDFS之前，需要首先在一个docker子网中运行etcd服务。
 
-1. Download or clone the project:
+1. 下载或克隆CatDFS:
 
 ```bash
 git clone https://github.com/zzhtttsss/catdfs.git --recurse-submodules
 ```
 
-2. Compile each module into a `docker` image, in the directory of each module:
+2. 将各个模块编译为`docker`镜像，在各个模块的目录下：
 
 ```bash
 docker build -t [name] .
 ```
 
-3. Run `docker compose`：
+3. 运行`docker compose`文件：
 ```bash
 docker compose -f [compose.yaml] up -d
 ```
 
-## Example
+## 示例
 
-### Operation Example
+### 操作示例
 
 <img src="./document/display.gif" width="750"/>
 
-### Monitor Example
+### 监控示例
 
 <img src="./document/monitor.png" height="500"/>
 
-## Design
+## 设计
 
-### Overall Structure
+### 整体架构
 
-CatDFS mainly consists of three parts: Master, Chunkserver and Client. GRPC is used for communication between each part.
+CatDFS主要由三部分组成，Master，Chunkserver和Client。各个部分之间均采用GRPC进行通信。
 
 #### Master
 
-Master is the brain of the whole system and is responsible for maintaining the metadata of the system (mainly including
-Chunk information, Chunkserver information and the file tree). In order to ensure high availability, the Master adopts
-a multi-node deployment strategy and uses the Raft algorithm (implemented through
-[hashicorp/raft](https://github.com/hashicorp/raft)) to ensure metadata consistency among the Master's multiple nodes.
-And use the log persistence method implemented by
-[hashicorp/raft](https://github.com/hashicorp/raft) to do metadata persistence. 
-All Master nodes will add their own addresses to Etcd to ensure Clients and Chunkservers can find them. The Master
-synchronizes information with the Chunkserver when receiving the heartbeat of the Chunkserver(refreshes the metadata,
-and assigns file-sending tasks) instead of sending commands to the Chunkserver actively. The Master will also handle the
-Client's request to find or modify the metadata according to the user's request.
+Master是整个系统的中枢节点，负责维护系统的元数据（主要包括Chunk信息，chunkserver信息和文件树）。为了保证高可用性，
+Master采取多节点部署策略，并使用Raft共识算法（通过[hashicorp/raft](https://github.com/hashicorp/raft)实现）
+保证Master多节点间的元数据一致性，并采用[hashicorp/raft](https://github.com/hashicorp/raft)自带
+的日志持久化方式来完成元数据持久化。所有Master节点都会将自己的地址添加到Etcd中以确保Client和Chunkserver可以找到
+它们。Master不会主动向Chunkserver发送命令，而是在接受Chunkserver的心跳时与Chunkserver同步信息，刷新元数据以及
+分配文件发送任务。Master还会接受Client的请求，根据用户请求查找或是修改元数据。
 
 #### Chunkserver
 
-Chunkserver is the storage node of the system and is responsible for actually storing files uploaded by users. However, 
-the Chunkserver does not store the whole file but chunks of a fixed size (64MB). Each file will be cut into chunks of 
-the same size, and each Chunk will be stored in multiple Chunkservers according to the number of replica set by the user.
-Chunkserver will periodically send heartbeat to Master, and exchange information with Master through heartbeat. The 
-Chunkserver and other Chunkservers and Clients will transmit and receive Chunks through pipelines.
+Chunkserver是系统的存储节点，负责实际存储用户上传的文件。但是Chunkserver上存储的不是整个的文件而是固定大小（64MB）的Chunk，
+每个文件都会被切成等大的Chunk，每个Chunk按照用户设定的副本数量存在多个Chunkserver中。Chunkserver会定期向Master发送心跳，
+并通过心跳与Master交换信息。Chunkserver与其他Chunkserver和Client之间会通过建立管道传输Chunk和接受Chunk。
+
 
 #### Client
 
-The Client is a client used by the user. The user sends various commands to the system through the client. Specifically,
-the Client will request the Master to get or modify the metadata, establish a pipeline with the Chunkserver and send or 
-receive the Chunk.
+Client是供用户使用的客户端，用户通过客户端向系统发送各个指令。具体而言，Client会向Master请求获取或修改元数据，
+与Chunkserver建立管道传输和接受Chunk。
 
 <img src="./document/architecture.png" width="750" title="Architecture of CatDFS"/>
 
-### Metadata
+### 元数据
 
-The metadata of CatDFS consists of three parts: Chunk metadata, DataNode (ie Chunkserver) metadata and the file tree.
+CatDFS的元数据主要可分为三部分：Chunk元数据，DataNode（即Chunkserver）元数据和文件树。
 
-#### Chunk Metadata
+#### Chunk元数据
 
-Chunk metadata mainly includes `chunksMap` and `pendingChunkQueue`. The `chunksMap` contains all the Chunks stored in 
-the current system to achieve O(1) search for Chunks. Two sets are used in each Chunk to store the DataNodes that currently
-store the Chunk (`dataNodes`), and the DataNodes that have been allocated to store the Chunk but have not yet confirmed
-the completion of the storage (`pendingDataNodes`) . `pendingChunkQueue` is a thread-safe queue, which contains all currently
-missing chunks waiting for system allocation. The presence of one chunk in the queue means that the chunk currently lacks
-a replica.
+Chunk元数据中主要包括chunksMap和pendingChunkQueue。chunksMap包含了当前系统中储存的所有Chunk以实现对Chunk O(1)的查找。
+每个Chunk中会使用两个set分别存有当前已经存储该Chunk的DataNode（dataNodes），和已经分配了存储该Chunk但尚未确认储存完成的DataNode（pendingDataNodes）。
+pendingChunkQueue是一个线程安全的队列，其中存有当前所有缺少副本等待系统分配的Chunk，每个Chunk在队列中出现一个即代表这个Chunk当前缺少一个副本。
 
-#### DataNode Metadata
+#### DataNode元数据
 
-DataNode metadata mainly includes `dataNodeMap` and `dataNodeHeap`. The `dataNodeMap` contains all the DataNodes (ie Chunkservers)
-that have not yet died in the current system to achieve O(1) search for DataNodes. Each DataNode will use a set to record
-the Chunks that the DataNode has (`Chunks`) , and use a map to record all the Chunk sending tasks that have not yet been 
-confirmed to be completed (`FutureSendChunks`).
+DataNode元数据中主要包括dataNodeMap和dataNodeHeap。dataNodeMap包含了当前系统中所有尚未死亡的DataNode
+（也就是Chunkserver）以实现对DataNode O(1)的查找。每个DataNode会用一个set记录该DataNode存有的Chunk（Chunks），
+用一个map记录所有尚未确认完成的Chunk发送任务（FutureSendChunks）。
 
-#### File Tree
+#### 文件树
 
-The structure of the file tree is Trie, each node represents a directory or file, and each node stores its own parent node
-and child node (via a map). 
+文件树采用前缀树（Trie）结构，每一个节点代表一个目录或文件，每个节点会存储自己的父亲节点和儿子节点（通过map）。
+每次查找都会根据文件名沿树查找，平均时间复杂度为O(1)。
 
 <img src="./document/metadata.png" width="750"/>
 
-### High Availability
-The high availability of the Master of CatDFS mainly adopts the Master multi-node deployment strategy (based on 
-[hashicorp/raft](https://github.com/hashicorp/raft)) whose metadata consistency is guaranteed by the Raft algorithm, and
-uses Etcd to implement service registration and discovery.
+### 高可用性
 
-#### Switch Leader 
+CatDFS的Master节点高可用性主要采用由Raft共识算法保证元数据一致性的Master多节点方案
+（基于[hashicorp/raft](https://github.com/hashicorp/raft)实现），并借助Etcd来进行服务注册和发现。
 
-When the leader node crashes or there is a network failure so that leader node can not keep in touch with other nodes in
-the cluster for a certain period of time, the master cluster will re-elect the leader node and perform the leader switch.
+#### Leader切换
 
-The new Leader node will:
-* Write its own address into the corresponding key of Etcd to replace the address of the old Leader node.
-* Register an Observer to monitor the follower node state change event, so that the Follower node can be removed from the
-  cluster in time after it dies.
-* Monitor Chunkserver heartbeat in a goroutine.
-* Consume `pendingChunkQueue` in a goroutine.
+当Leader节点崩溃或是出现网络故障一定时间没有和集群其他节点保持联系后，Master集群会重新选举出的Leader节点并进行Leader切换。
 
-The old leader node will:
-* Unregister the Observer that monitors the state change event of the follower node.
-* Cancel the context of the goroutine monitoring the Chunkserver heartbeat and the goroutine consuming `pendingChunkQueue`
-  to stop these two goroutines.
-* Write its address to the Follower directory of Etcd.
+新Leader节点将会：
+* 将自身的地址写入到Etcd相应的key中来替换原Leader节点的地址；
+* 注册一个Observer监控Follower节点状态变化事件，以便在Follower节点死亡后及时将其移出集群；
+* 在一个协程中监控Chunkserver心跳；
+* 在一个协程中定时消费pendingChunkQueue；
+* 在一个协程中定时清理元数据垃圾，延时删除目录树节点。
+
+旧Leader节点将会：
+* 注销监控Follower节点状态变化事件的Observer；
+* 取消所有的监控和定时协程；
+* 将自身的地址写入到Etcd的Follower目录下。
 
 
-#### Metadata Persistence
+#### 元数据持久化
 
-The metadata persistence of CatDFS utilizes the persistence mechanism of [hashicorp/raft](https://github.com/hashicorp/raft).
-Specifically, each Master node will store all current log information (Log), cluster information and regularly save snapshots.
-The Log contains changes to metadata, the cluster information contains the node status of the current cluster, and the 
-snapshot contains all metadata information.
+CatDFS的元数据持久化利用了[hashicorp/raft](https://github.com/hashicorp/raft)的持久化机制。
 
-#### Crash Recovery
+具体而言，每个Master节点都会存储当前所有的日志信息（Log），集群信息并定期保存快照（Snapshot）。其中Log中包含对元数据的更改，
+集群信息包含当前集群的节点状态，Snapshot包含所有的元数据信息。
 
-After a Master node crashes, it is removed from the master cluster and Etcd by the leader node. If the crashed node is a
-leader node, a new leader node will be elected to complete the above operations.
+#### 崩溃恢复
 
-When the Master node restarts, it will first read the snapshot and then re-execute each log after the snapshot to restore
-the metadata. After that it will rejoin the master cluster and re-register its address in Etcd, and get the log from the
-leader node to bring the metadata to the latest state. After completing the above steps, the Master node can provide 
-services again.
+在一个Master节点崩溃后，其会被Leader节点从Raft集群和Etcd中删除。如果该节点是Leader节点，则会选举出新的Leader节点完成以上操作。
 
-#### Read-write Separation
+当Master节点恢复重启后，它将先读取Snapshot然后重新执行该Snapshot后的每一条Log信息来还原元数据。
+之后它将重新加入Raft集群并在Etcd中重新注册它的信息，并从Leader节点获取到Log信息来将元数据变为最新状态。
+完成以上步骤，Master节点即可重新对外提供服务。
 
-Read-write separation means writing metadata from the leader node and reading metadata from the follower node. For the 
-operations of reading metadata, such as `List` and `Stat`, we provide two modes, one is to read the metadata from the 
-leader node (Latest), this mode can ensure that the latest data is read; the other is Randomly select a node from the 
-follower node to read the metadata (Stale). In this mode, the metadata has a delay of about 50ms. Users can add parameters
-to the command to set the mode.
+#### 读写分离
 
-### File Transfer
+读写分离即从Leader节点写元数据，从Follower节点读取元数据。对于读取元数据的操作，如List和Stat，我们提供了两种模式，
+一种是从Leader节点读取元数据（Latest），这种模式可以保证读到的是最新数据；另一种是从Follower节点随机选取一个节点读取元数据（Stale），
+这种模式下元数据存在50ms左右的延迟。用户可以在命令中添加参数来设置该命令采用哪种模式。
 
-File transfer mainly uses the Pipeline mechanism, which will establish a pipeline between the Client and multiple 
-Chunkservers or among multiple Chunkservers, and the data will be sent from sender to each node on the pipeline.
+### 文件传输
 
-#### GRPC Streaming Transmission
+文件传输主要采用管道（Pipeline）机制，该机制会将Client和多个Chunkserver之间建立管道，数据会从一端发送到管道上的每一个节点。
 
-Because the size of a chunk is 64mb, normal GRPC transmission is not suitable for such large files, so we use GRPC 
-streaming transmission, which divides the whole chunk into multiple `piece` to transmit.
+#### 采用GRPC Stream传输
 
-#### Transmission-IO Separation
+因为一个Chunk大小为64mb，GRPC常规传输不适合这种大文件，所以采用这种流式传输，其会将整个chunk分为多次传输，这里称每次传输的为一个piece。
 
-Because IO is slow, frequent IO by the main thread will greatly affect the transmission efficiency of the pipline, so
-the Chunkserver write the received piece to the hard disk in a goroutine, and the main thread is only responsible for 
-receiving pieces, put pieces into the pipeline to give them the goroutine and send pieces to the next Chunkserver.
+#### 接受转发和IO分离
 
-#### Pipeline
+因为IO非常缓慢，主线程进行频繁的IO会很影响pipline的传输效率，所以采用协程加管道的方式使得Chunkserver在协程中将接收到的piece写入到硬盘中，
+而主线程只负责接收piece，放入管道传给协程以及将piece转发给下一个Chunkserver
 
-When Chunkserver A is called by a client or another Chunkserver via RPC, it will get the other Chunkservers that need to
-receive the chunk from the metadata passed by the stream, and take the first Chunkserver B to call B's `transferChunk`
-method via RPC to get a stream which A can send data to B by.
+#### 递归完成数据传输
 
-Assuming that now there is a client that needs to transfer a Chunk to Chunkserver A, Chunkserver B, and 
-Chunkserver C, this design allows the client to call A's `transferChunk` method through RPC to establish a stream to 
-transfer the chunk. A will also call B's `transferChunk` method. To send data to C, B will also establish a stream by 
-calling the C's `transferChunk` method, so that the pipeline is established. When the client transmits a piece to A, 
-A will immediately use the stream held by B to send the piece. And B will send it to C in the same way after receiving it.
+当一个Chunkserver A被client或其他Chunkserver通过rpc调用transferChunk方法时，其会从Stream传递来的metadata中得到当前剩下的需要传输
+的Chunkserver的切片，并取第一个Chunkserver B通过rpc调用B的transferChunk方法得到一个传输连接。
+
+假设当前有client需要向Chunkserver A和Chunkserver B，Chunkserver C传输一个Chunk，这种设计可以使client在通过rpc调用A的transferChunk
+方法建立一个stream连接来传输chunk时，A会同样通过调用B的transferChunk方法建立一个Stream连接，B会同样通过调用C的
+transferChunk方法建立一个Stream连接，这样整个pipline就建立起来了，在client向A传输一个piece时，A会立即使用持有的
+B的stream连接将piece转发给B，B收到后同理转发给C。
 
 <img src="./document/transfer.png" width="750"/>
 
-#### Error Handling
+#### 错误处理
 
-Each Chunkserver in a pipeline can occur two kinds of errors: a file write error or a data transfer error. File write 
-errors only affect a single node, while data transfer errors affect the node where the error occurred and all subsequent
-nodes. In order to get all the nodes that failed to store chunks so that the master can make up for the missing replicas
-later, each chunkserver returns an error list to the previous node in the pipeline after the transfer is complete. The 
-list contains the node addresses of all nodes it found that have failed to transmit. The maintenance strategy of the list
-is as follows:
-* When the node has a file write error, it will add its own address to the list.
-* When an data transfer error occurs when a node sends data to the next node, all node addresses after the node are added
-  to the list.
-* When the node receives data transfer error, directly stop receiving and sending data.
-* After the node receives the error list returned by the next node, it will merge its current list with this list.
+一个管道中的每一个Chunkserver都可能出现两种错误：文件写入错误或是数据传输错误。文件写入错误只会影响到单个节点,
+而数据传输错误会影响到发生错误的节点及其后续的所有节点。
 
-Through this strategy, the first node of the pipeline(ie sender) can get all the nodes in the pipeline that fail to store
-Chunks, and count the number of nodes and return them to the Master through heartbeat. The Master will add this amount 
-of the Chunk to the `pendingChunkQueue`, and then fill up the copy of the Chunk by consuming the `pendingChunkQueue`.
+为了得到所有存储Chunk失败的节点来让Master在之后能弥补缺失的副本，每个Chunkserver在传输完成后都会返回一个错误列表给管道中的前一个节点。
+该列表包含该节点及该节点之后所有节点中传输失败的节点地址，该列表的维护机制如下：
+* 当节点发生文件写入错误时，便将自己的地址加入到列表中；
+* 当节点向下一个节点发送数据出错时，将该节点之后的所有节点地址都加入到列表中；
+* 当节点接收数据出错时，直接停止接收和发送数据；
+* 节点在接收到下一个节点返回的错误列表后，会将当前自己的列表与该列表合并。
+
+通过该机制，管道的第一个节点也就是发送方能够获取到管道中所有存储Chunk失败的节点并统计数量将其返回给Master。
+
+Master会将向pendingChunkQueue中加入此数量的该Chunk，并在之后通过消费pendingChunkQueue来补齐该Chunk的副本。
 
 <img src="./document/transferError.png" width="750"/>
 
-### Shrinkage
+### 缩容
 
-After the Master does not receive the heartbeat of a Chunkserver for a certain period of time, it will determine that the
-Chunkserver is dead, triggering the shrinkage. The specific process is shown in the figure (the picture is so large that
-Github cannot display it well, it is recommended to download and view):
+Master在一定时间没有收到某个Chunkserver的心跳后会判定该Chunkserver死亡，触发缩容。
+
+Chunkserver死亡的判定条件：
+1. 由leader发起MonitorHeartbeat协程，每隔一段时间检查各个Chunkserver的心跳时间。当某个Chunkserver心跳时间超过[30s]未刷新时，
+认为该Chunkserver进入Died状态，此时不接受leader发起的任何安排;
+2. 再经过[10m]，如果该Chunkserver还未成功刷新状态(成功发起心跳)，则视为该Chunkserver彻底下线，
+于是将该Chunkserver注销，其上存储的Chunk需要进行复制以确保副本数。
+
+Chunkserver确定死亡后，由leader将该Chunkserver上包含的所有Chunk以及特殊列表中还存在的Chunk存放进一个特殊队列(pendingChunkQueue)中。
+所有需要复制的Chunk都需要放到该队列，无论是否是由于缩容导致的。
+
+由leader发起MonitorDeadChunk协程，每隔一段时间或发现该Queue的Chunk数量超过阈值时，开始进行复制操作：
+1. 为了避免频繁发起日志Apply操作，这里进行批处理，批的数量为[32=2G]。对于一批中的各个Chunk，需要寻找存储该Chunk且存活的Chunkserver
+以及将该Chunk复制过去且存活的Chunkserver;
+2. 如何寻找存储该Chunk的Chunkserver？每个Chunk结构会记录存储的Chunkserver，从中获取存活的且IO量较小的Chunkserver即可；
+3. 如果寻找将该Chunk复制过去Chunkserver？通过DFS查找目的Chunkserver的最优解；
+4. 寻找完毕后，还需要进行2步操作：
+   1. 汇总复制的转移记录，形成Operation，并实现Apply方法。(因为是对元数据进行修改)
+   2. 为了避免Leader调用Chunkserver的RPC，将转移的Chunk和目的地一并放进对应Chunkserver的特殊列表FutureSendChunks中，
+并随着心跳机制传给Chunkserver。在Chunkserver接收到心跳后，对该Chunk和目的地发起RPC进行复制。
+
+具体流程如图所示（图片较大以至于Github不能很好的显示，
+建议下载查看）：
 
 <img src="./document/shrink.png" width="750"/>
 
-### Expansion
+### 扩容
 
-The expand operation should be triggered when a Chunkserver node is added, not when the Chunkserver is back online.
+扩容处理应该在新增Chunkserver节点时触发，而不是Chunkserver重新上线时触发。
 
-Trigger condition：
-- When Chunkserver is registering, it will scan all chunks stored in the local path. This Chunkserver is a new server if
-the number of scanning chunks is zero, otherwise, this Chunkserver is an old server. 
-- Set a = the number of scanning chunks in registering Chunkserver; b = the average number of all chunks in Master
-- a >= b  NOT expanding
-- a < b && b - a <= 1 NOT expanding
-- b - a > 2 expanding
+触发条件：
+- Chunkserver进行注册时，会扫描存储在该Chunkserver上的所有Chunk。如果不为空，说明是重新上线；如果为空，说明是新增节点。
+- 设 a = 注册的Chunkserver节点上存储的Chunk数量(新增节点则为0)；b = Leader上所有Chunkserver存储的Chunk数量的平均值
+- a >= b  不扩容
+- a < b && b - a <= 1 不扩容
+- b - a > 2 扩容
 
-Expanding strategy：
-1. The number of pending chunks is the average number of all chunks stored in Master;
-2. None of the pending chunks are NOT allowed in scanning chunks stored in registering Chunkserver;
-3. Retrieve all of the alive Chunkserver to find a proper chunk that can be moved to this new Chunkserver until the
-count is up or there is no chunk satisfying the above conditions;
-4. Pending chunks will be put into `FutureSendChunk` respectively and transferred to the dataNode through heartbeat RPC。
+扩容策略：
+1. 确定分配的Chunk数量，即其他Chunk数量的平均值；
+2. 检查该Chunkserver自带的Chunk，为其分配的Chunk不应该出现在这里；
+3. 检查每个存活Chunkserver的Chunk列表，每次从中取一个不在待处理列表和自带Chunk列表的Chunk。直到不能取或数量到达上限为止；
+4. 待处理列表会分别存储到对应的Chunkserver中，并跟随心跳反馈给Chunkserver。
 
-The expanding Chunkserver is unable to serve as a normal Chunkserver until most of the allocated Chunks obtained through
-heartbeat RPC have been successfully moved to the local storage.
+需要进行扩容操作的Chunkserver在操作还未完成时，是无法正常参与Master调度，直到通过心跳获取到大部分的分配Chunk已经成功移动到本地。
 
-The specific process is shown in the figure:
+具体流程如图所示：
 
 <img src="./document/expand.png" width="750"/>
 
-### Monitor
+### 监控
 
-Use `Cadvisor`+`Prometheus`+`Grafana` as monitor. Monitoring:
-* the number of running containers
-* the cpu usage of all containers
-* the memory usage of all containers
-* network IO
-* disk IO
-* the count and successful rate of all RPC
+使用`Cadvisor`+`Prometheus`+`Grafana`作为可视化监控的组件。监控内容包括：
+* 运行的容器数量
+* 各个容器的CPU使用率
+* 各个容器的内容使用率
+* 网络IO
+* 磁盘IO
+* 各个RPC调用的数量和成功率
 
-## Maintainers
+## 维护者
 
 [@zzhtttsss](https://github.com/zzhtttsss)
 
 [@DividedMoon](https://github.com/dividedmoon)
 
-## License
+## 使用许可
 
 [GPL](LICENSE)
